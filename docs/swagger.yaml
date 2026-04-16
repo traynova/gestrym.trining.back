@@ -4,7 +4,91 @@ info:
   description: API para el manejo de entrenamientos.
   title: Gestrym API Training
   version: "1.0"
-paths: {}
+paths:
+  /public/exercises:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all exercises. Optionally filter by bodyPart and target.
+      parameters:
+      - description: Filter by body part
+        in: query
+        name: bodyPart
+        type: string
+      - description: Filter by target
+        in: query
+        name: target
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get list of exercises
+      tags:
+      - Exercises
+  /public/exercises/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a specific exercise using its unique ID.
+      parameters:
+      - description: Exercise ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get exercise by ID
+      tags:
+      - Exercises
+  /public/exercises/import:
+    post:
+      consumes:
+      - application/json
+      description: Fetch exercises from external API and store them locally. Highly
+        idempotent.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Manually import exercises
+      tags:
+      - Exercises
 securityDefinitions:
   ApiKeyAuth:
     in: header

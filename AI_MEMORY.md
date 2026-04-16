@@ -49,3 +49,17 @@ When generating code for Gestrym:
 - **Nutrition Module:** Will be added later to track diets, macros, and meal plans. Models should remain loosely coupled so nutrition can optionally tie into training (e.g., caloric goals vs. workout expenditure).
 - **Advanced Analytics:** Data scaling will require efficient queries and possibly event sourcing for stats. Always anticipate potential N+1 query traps.
 - **Multi-tenant Support:** Plan for a potential shift where gym centers/trainers autonomously manage their own clients. Always consider a `ClientID` or `TrainerID` foreign key presence in core entities.
+
+## 8. 🌐 API Endpoints & Frontend Consumption
+The backend exposes RESTful APIs using standard JSON payloads. All routes are documented via `swaggo/swag`.
+
+**Available Endpoints (`training-service`):**
+- **`GET /gestrym-training/public/exercises`**: Retrieves all exercises. Accepts `?bodyPart=` and `?target=` query filters.
+- **`GET /gestrym-training/public/exercises/:id`**: Retrieves details of a specific exercise by its unique GORM ID.
+- **`POST /gestrym-training/public/exercises/import`**: Triggers the manual import/sync process (Admin/System only).
+
+**Swagger Documentation:**
+- Swagger definitions live within the `docs/` folder.
+- They are auto-generated from `// @Summary`, `// @Description`, etc., annotations above specific Gin Handler functions.
+- Always run `swag init` when altering or building new endpoints to maintain a fresh contract for the frontend.
+- Frontend developers can browse the interactive Swagger UI dynamically at **`GET /gestrym-training/swagger/index.html`** when the server is running locally.
