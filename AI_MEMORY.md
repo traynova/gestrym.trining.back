@@ -21,7 +21,8 @@ Unlike strict hexagonal architecture where domain entities are completely separa
 - **auth-service** *(implemented)*: Handles user authentication, JWT token generation, role mapping (clients, trainers, admins), and registration.
 - **notification-service** *(implemented)*: Sends emails (e.g., via Brevo) and system alerts. Handles templates like recovery emails.
 - **file-service** *(implemented)*: Manages multimedia uploads (images, workout videos) securely.
-- **training-service** *(in progress)*: The current focus. Handles everything related to fitness: Exercises, workouts, routines, sets, and tracking progress.
+- **training-service** *(in progress)*: The core of the platform. Handles fitness: Exercises (catalog), workouts (structure & execution), and progress tracking.
+- **nutrition-service** *(integrated)*: Initial implementation integrated within the project. Manages Food catalogs and Nutritional tracking.
 
 ## 4. 💻 Coding Standards
 - **Golang Best Practices:** Follow standard Go idioms (Effective Go). Use descriptive variable names, handle errors explicitly without swallowing them, and rely on early returns (guard clauses).
@@ -57,6 +58,9 @@ The backend exposes RESTful APIs using standard JSON payloads. All routes are do
 - **`GET /gestrym-training/public/exercises`**: Retrieves all exercises. Accepts `?bodyPart=` and `?target=` query filters.
 - **`GET /gestrym-training/public/exercises/:id`**: Retrieves details of a specific exercise by its unique GORM ID.
 - **`POST /gestrym-training/public/exercises/import`**: Triggers the manual import/sync process (Admin/System only). **Enriches exercises by uploading external media (GIFs) to the internal `file-service` and storing the resulting `collectionId`**.
+- **`GET /gestrym-training/public/workouts/:id/full`**: Retrieves a complete workout structure, including exercises and sets, optimized for frontend rendering (React).
+- **`GET /gestrym-training/public/foods`**: Searches the food catalog. Accepts `?search=` filter.
+- **`GET /gestrym-training/public/foods/:id`**: Retrieves specific nutritional details for a food item.
 
 ## 9. 📦 File Storage Integration
 Training entities (like `Exercises`) are linked to multimedia files through a `CollectionID`. 
@@ -71,8 +75,13 @@ Training entities (like `Exercises`) are linked to multimedia files through a `C
   - `STORAGE_SERVICE_URL`: Endpoint of the file-service.
   - `STORAGE_SERVICE_API_KEY`: X-API-Key for internal authentication with the storage service.
 
+## 10. 🥗 Nutrition & Workout Modeling
+- **Food Catalog**: Foods are stored locally to avoid external API dependency at runtime (similar to exercises).
+- **Workout Tree**: Workouts are structured hierarchically: `Workout` -> `WorkoutExercise` -> `WorkoutSet`. 
+- **Frontend DTOs**: Use specialized DTOs in the Application layer to assemble nested structures, reducing the number of requests and logic required on the frontend.
+
 ---
-*Last updated: 2026-04-18 (Refined File Storage integration and Separation of Concerns)*
+*Last updated: 2026-04-18 (Implemented Nutrition module and complex Workout structures)*
 
 **Swagger Documentation:**
 - Swagger definitions live within the `docs/` folder.

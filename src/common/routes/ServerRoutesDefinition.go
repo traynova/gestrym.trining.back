@@ -17,8 +17,11 @@ import (
 	"gestrym-training/src/common/config"
 	"gestrym-training/src/training/application/usecases"
 	"gestrym-training/src/training/infrastructure/adapters"
-	"gestrym-training/src/training/infrastructure/repositories"
+	trainingRepos "gestrym-training/src/training/infrastructure/repositories"
+	nutritionRepos "gestrym-training/src/nutrition/infrastructure/repositories"
 	"gestrym-training/src/training/interfaces/http/handlers"
+	nutritionHandlers "gestrym-training/src/nutrition/interfaces/http/handlers"
+	nutritionUseCases "gestrym-training/src/nutrition/application/usecases"
 )
 
 type routesDefinition struct {
@@ -72,15 +75,25 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	db := dbConn.GetDB()
 
 	// Repositories
-	exerciseRepo := repositories.NewExerciseRepositoryImpl(db)
+	exerciseRepo := trainingRepos.NewExerciseRepositoryImpl(db)
+	workoutRepo := trainingRepos.NewWorkoutRepositoryImpl(db)
+	foodRepo := nutritionRepos.NewFoodRepositoryImpl(db)
 
 	// Adapters & Services
 	exerciseAdapter := adapters.NewExerciseDBAdapterImpl("", viper.GetString("RAPID_API_KEY"), viper.GetString("RAPID_API_HOST"))
 	storageAdapter := adapters.NewFileStorageAdapterImpl(viper.GetString("STORAGE_SERVICE_URL"), viper.GetString("STORAGE_SERVICE_API_KEY"))
+	
+	// Use Cases
 	importExerciseUC := usecases.NewImportExercisesUseCase(exerciseAdapter, storageAdapter, exerciseRepo)
+	getWorkoutFullUC := usecases.NewGetWorkoutFullUseCase(workoutRepo)
+	
+	searchFoodsUC := nutritionUseCases.NewSearchFoodsUseCase(foodRepo)
+	getFoodByIDUC := nutritionUseCases.NewGetFoodByIDUseCase(foodRepo)
 
 	// Controllers
 	exerciseHandler := handlers.NewExerciseHandler(importExerciseUC, exerciseRepo)
+	workoutHandler := handlers.NewWorkoutHandler(getWorkoutFullUC)
+	foodHandler := nutritionHandlers.NewFoodHandler(searchFoodsUC, getFoodByIDUC)
 
 	// Add server group
 	r.serverGroup = serverInstance.Group(docs.SwaggerInfo.BasePath)
@@ -95,6 +108,19 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 		exercisesGroup.GET("", exerciseHandler.ListExercises)
 		exercisesGroup.GET("/:id", exerciseHandler.GetExercise)
 		exercisesGroup.POST("/import", exerciseHandler.ImportExercises)
+	}
+
+	// Register Workout endpoints
+	workoutsGroup := r.publicGroup.Group("/workouts")
+	{
+		workoutsGroup.GET("/:id/full", workoutHandler.GetWorkoutFull)
+	}
+
+	// Register Nutrition endpoints
+	foodsGroup := r.publicGroup.Group("/foods")
+	{
+		foodsGroup.GET("", foodHandler.SearchFoods)
+		foodsGroup.GET("/:id", foodHandler.GetFoodByID)
 	}
 
 	r.privateGroup = r.serverGroup.Group("/private")

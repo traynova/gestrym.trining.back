@@ -89,6 +89,72 @@ paths:
       summary: Manually import exercises
       tags:
       - Exercises
+  /public/foods:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of foods filtered by name.
+      parameters:
+      - description: Food name to search
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search foods
+      tags:
+      - Nutrition
+  /public/foods/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve details of a specific food item.
+      parameters:
+      - description: Food ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get food by ID
+      tags:
+      - Nutrition
+  /public/workouts/{id}/full:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a workout with its exercises and sets in a frontend-friendly
+        structure.
+      parameters:
+      - description: Workout ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get full workout details
+      tags:
+      - Workouts
 securityDefinitions:
   ApiKeyAuth:
     in: header
