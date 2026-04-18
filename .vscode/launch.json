@@ -5,13 +5,29 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch Go Program",
+      "name": "Debug Import Exercises",
       "type": "go",
       "request": "launch",
       "mode": "debug",
-      "program": "${workspaceFolder}",
+      "program": "${workspaceFolder}/cmd/import_exercises",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CONFIG_PATH": "${workspaceFolder}/deployment/env_local.yaml"
+      },
+      "args": [
+        "--local=true"
+      ]
+    },
+    {
+      "name": "Debug Import Exercises",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/import_exercises",
       "env": {},
-      "args": ["--local=true"]
+      "args": [
+        "--local=true"
+      ]
     },
     {
       "name": "Attach to Edge",
@@ -47,7 +63,10 @@
       "request": "launch",
       "mode": "test",
       "program": "${workspaceFolder}",
-      "args": ["-test.run", "MyTestFunction"]
+      "args": [
+        "-test.run",
+        "MyTestFunction"
+      ]
     }
   ]
 }

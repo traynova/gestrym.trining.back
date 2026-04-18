@@ -56,7 +56,19 @@ The backend exposes RESTful APIs using standard JSON payloads. All routes are do
 **Available Endpoints (`training-service`):**
 - **`GET /gestrym-training/public/exercises`**: Retrieves all exercises. Accepts `?bodyPart=` and `?target=` query filters.
 - **`GET /gestrym-training/public/exercises/:id`**: Retrieves details of a specific exercise by its unique GORM ID.
-- **`POST /gestrym-training/public/exercises/import`**: Triggers the manual import/sync process (Admin/System only).
+- **`POST /gestrym-training/public/exercises/import`**: Triggers the manual import/sync process (Admin/System only). **Enriches exercises by uploading external media (GIFs) to the internal `file-service` and storing the resulting `collectionId`**.
+
+## 9. 📦 File Storage Integration
+Training entities (like `Exercises`) are linked to multimedia files through a `CollectionID`. 
+- **Storage Workflow**: When importing or creating entities with files, the `training-service` communicates with the `file-service` internally.
+- **`FileStorageAdapter`**: Used to upload files (from URLs or Readers) to the storage service.
+- **Collection-based group**: Multiple files (images, videos, gifs) per exercise are grouped under the same `CollectionID`.
+- **Environment Variables**:
+  - `STORAGE_SERVICE_URL`: Endpoint of the file-service.
+  - `STORAGE_SERVICE_API_KEY`: X-API-Key for internal authentication with the storage service.
+
+---
+*Last updated: 2026-04-17 (Added File Storage integration for Exercises)*
 
 **Swagger Documentation:**
 - Swagger definitions live within the `docs/` folder.

@@ -10,7 +10,8 @@ type Exercise struct {
 	BodyPart  string    `gorm:"size:100" json:"bodyPart"`
 	Target    string    `gorm:"size:100" json:"target"`
 	Equipment string    `gorm:"size:100" json:"equipment"`
-	GifURL    string    `gorm:"size:500" json:"gifUrl"`
-	CreatedAt time.Time `json:"createdAt"`
+	GifURL       string    `gorm:"size:500" json:"gifUrl"`
+	CollectionID string    `gorm:"size:255" json:"collectionId"`
+	CreatedAt    time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

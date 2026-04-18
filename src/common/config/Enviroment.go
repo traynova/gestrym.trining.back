@@ -12,23 +12,26 @@ import (
 )
 
 type env struct {
-	GIN_MODE               string `mapstructure:"GIN_MODE" validate:"required,oneof=debug release test"`
-	GOOGLE_CLIENT_ID       string `mapstructure:"GOOGLE_CLIENT_ID"`
-	GORM_LOG_LEVEL         string `mapstructure:"GORM_LOG_LEVEL" validate:"required,oneof=error warn info silent"`
-	POSTGRES_DB_HOST       string `mapstructure:"POSTGRES_DB_HOST" validate:"required"`
-	POSTGRES_DB_PORT       string `mapstructure:"POSTGRES_DB_PORT" validate:"required"`
-	POSTGRES_DB_USER       string `mapstructure:"POSTGRES_DB_USER" validate:"required"`
-	POSTGRES_DB_PASSWORD   string `mapstructure:"POSTGRES_DB_PASSWORD" validate:"required"`
-	POSTGRES_DB_NAME       string `mapstructure:"INTERMEDIATOR_POSTGRES_DB_NAME" validate:"required"`
-	POSTGRES_DB_SSLMODE    string `mapstructure:"POSTGRES_DB_SSLMODE" validate:"required"`
-	JWT_KEY                string `mapstructure:"JWT_KEY" validate:"required"`
-	BASIC_AUTH_USERNAME    string `mapstructure:"BASIC_AUTH_USERNAME" validate:"required"`
-	BASIC_AUTH_PASSWORD    string `mapstructure:"BASIC_AUTH_PASSWORD" validate:"required"`
-	API_KEY                string `mapstructure:"API_KEY" validate:"required"`
-	X_API_KEY              string `mapstructure:"X_API_KEY" validate:"required"`
-	GESTRYM_SERVER_ADDRESS string `mapstructure:"GESTRYM_SERVER_ADDRESS" validate:"required"`
-	EMAIL_CONFIRMATION_URL string `mapstructure:"EMAIL_CONFIRMATION_URL"`
-	SUPPORT_EMAIL          string `mapstructure:"SUPPORT_EMAIL"`
+	GIN_MODE                        string `mapstructure:"GIN_MODE" validate:"required,oneof=debug release test"`
+	GOOGLE_CLIENT_ID                string `mapstructure:"GOOGLE_CLIENT_ID"`
+	GORM_LOG_LEVEL                  string `mapstructure:"GORM_LOG_LEVEL" validate:"required,oneof=error warn info silent"`
+	POSTGRES_DB_HOST                string `mapstructure:"POSTGRES_DB_HOST" validate:"required"`
+	POSTGRES_DB_PORT                string `mapstructure:"POSTGRES_DB_PORT" validate:"required"`
+	POSTGRES_DB_USER                string `mapstructure:"POSTGRES_DB_USER" validate:"required"`
+	POSTGRES_DB_PASSWORD            string `mapstructure:"POSTGRES_DB_PASSWORD" validate:"required"`
+	POSTGRES_DB_NAME                string `mapstructure:"POSTGRES_DB_NAME" validate:"required"`
+	POSTGRES_DB_SSLMODE             string `mapstructure:"POSTGRES_DB_SSLMODE" validate:"required"`
+	JWT_KEY                         string `mapstructure:"JWT_KEY" validate:"required"`
+	BASIC_AUTH_USERNAME             string `mapstructure:"BASIC_AUTH_USERNAME" validate:"required"`
+	BASIC_AUTH_PASSWORD             string `mapstructure:"BASIC_AUTH_PASSWORD" validate:"required"`
+	AUTH_API_KEY                    string `mapstructure:"AUTH_API_KEY" validate:"required"`
+	GESTRYM_TRAINNER_SERVER_ADDRESS string `mapstructure:"GESTRYM_TRAINNER_SERVER_ADDRESS" validate:"required"`
+	EMAIL_CONFIRMATION_URL          string `mapstructure:"EMAIL_CONFIRMATION_URL"`
+	SUPPORT_EMAIL                   string `mapstructure:"SUPPORT_EMAIL"`
+	STORAGE_SERVICE_URL             string `mapstructure:"STORAGE_SERVICE_URL" validate:"required"`
+	STORAGE_SERVICE_API_KEY         string `mapstructure:"STORAGE_SERVICE_API_KEY" validate:"required"`
+	RAPID_API_KEY                   string `mapstructure:"RAPID_API_KEY" validate:"required"`
+	RAPID_API_HOST                  string `mapstructure:"RAPID_API_HOST" validate:"required"`
 }
 
 func (v *env) Validate() error {
@@ -57,19 +60,19 @@ var (
 )
 
 const (
-	envLocalConfigFile      = ".././deployment/env_local.yaml"
+	envLocalConfigFile      = "./deployment/env_local.yaml"
 	envProductionConfigFile = "./deployment/env.yaml"
-	envTestConfigFile       = "../../../../../deployment/env_test.yaml"
+	envTestConfigFile       = "./deployment/env_test.yaml"
 )
 
 func InitEnvironment(isLocalEnv bool) {
 	envOnce.Do(func() {
 		// Seleccionar el archivo de configuración dependiendo del entorno
 		if isLocalEnv {
-			logger.Info("[TRAYNOVA_AUTH] servidor iniciado en modo local")
+			logger.Info("[GESTRYM_TRAINING] servidor iniciado en modo local")
 			viper.SetConfigFile(envLocalConfigFile)
 		} else {
-			logger.Info("[TRAYNOVA_AUTH] servidor iniciado en modo producción")
+			logger.Info("[GESTRYM_TRAINING] servidor iniciado en modo producción")
 		}
 
 		// Leer las variables de entorno

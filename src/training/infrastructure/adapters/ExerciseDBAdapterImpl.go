@@ -37,16 +37,16 @@ type externalExercisePayload struct {
 }
 
 func (a *ExerciseDBAdapterImpl) FetchAllExercises() ([]models.Exercise, error) {
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/exercises?limit=3000", a.BaseURL), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/exercises?limit=10", a.BaseURL), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if a.APIKey != "" {
-		req.Header.Add("X-RapidAPI-Key", a.APIKey)
+		req.Header.Add("x-rapidapi-key", a.APIKey)
 	}
 	if a.Host != "" {
-		req.Header.Add("X-RapidAPI-Host", a.Host)
+		req.Header.Add("x-rapidapi-host", a.Host)
 	}
 
 	client := &http.Client{}
@@ -78,7 +78,7 @@ func (a *ExerciseDBAdapterImpl) FetchAllExercises() ([]models.Exercise, error) {
 			BodyPart:  p.BodyPart,
 			Target:    p.Target,
 			Equipment: p.Equipment,
-			GifURL:    p.GifUrl,
+			GifURL:    fmt.Sprintf("%s/image?exerciseId=%s&resolution=360&rapidapi-key=%s", a.BaseURL, p.Id, a.APIKey),
 		})
 	}
 

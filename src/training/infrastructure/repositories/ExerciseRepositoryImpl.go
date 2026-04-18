@@ -20,7 +20,7 @@ func (r *ExerciseRepositoryImpl) BulkInsertExercises(exercises []models.Exercise
 	// Idempotent insertion using OnConflict (upsert/do nothing).
 	return r.DB.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "ext_id"}},
-		DoNothing: true, // If it already exists based on ExtID, ignore the insert.
+		DoUpdates: clause.AssignmentColumns([]string{"collection_id", "gif_url", "updated_at"}),
 	}).CreateInBatches(exercises, 100).Error
 }
 

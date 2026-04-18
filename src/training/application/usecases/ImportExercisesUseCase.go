@@ -8,14 +8,16 @@ import (
 
 // ImportExercisesUseCase orchestrates the fetching and storing of exercises
 type ImportExercisesUseCase struct {
-	Adapter interfaces.ExerciseDBAdapter
-	Repo    interfaces.ExerciseRepository
+	Adapter        interfaces.ExerciseDBAdapter
+	StorageAdapter interfaces.FileStorageAdapter
+	Repo           interfaces.ExerciseRepository
 }
 
-func NewImportExercisesUseCase(adapter interfaces.ExerciseDBAdapter, repo interfaces.ExerciseRepository) *ImportExercisesUseCase {
+func NewImportExercisesUseCase(adapter interfaces.ExerciseDBAdapter, storage interfaces.FileStorageAdapter, repo interfaces.ExerciseRepository) *ImportExercisesUseCase {
 	return &ImportExercisesUseCase{
-		Adapter: adapter,
-		Repo:    repo,
+		Adapter:        adapter,
+		StorageAdapter: storage,
+		Repo:           repo,
 	}
 }
 
@@ -26,6 +28,18 @@ func (uc *ImportExercisesUseCase) Execute() error {
 	exercises, err := uc.Adapter.FetchAllExercises()
 	if err != nil {
 		return err
+	}
+
+	for i := range exercises {
+		if exercises[i].GifURL != "" {
+			log.Printf("Uploading gif for exercise: %s", exercises[i].Name)
+			collectionID, err := uc.StorageAdapter.UploadFromURL(exercises[i].GifURL, "training")
+			if err != nil {
+				log.Printf("Warning: failed to upload gif for %s: %v", exercises[i].Name, err)
+				continue
+			}
+			exercises[i].CollectionID = collectionID
+		}
 	}
 
 	log.Printf("Fetched %d exercises. Saving to database... (ignoring existing to maintain idempotency)", len(exercises))

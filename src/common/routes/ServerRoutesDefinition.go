@@ -76,7 +76,8 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 
 	// Adapters & Services
 	exerciseAdapter := adapters.NewExerciseDBAdapterImpl("", viper.GetString("RAPID_API_KEY"), viper.GetString("RAPID_API_HOST"))
-	importExerciseUC := usecases.NewImportExercisesUseCase(exerciseAdapter, exerciseRepo)
+	storageAdapter := adapters.NewFileStorageAdapterImpl(viper.GetString("STORAGE_SERVICE_URL"), viper.GetString("STORAGE_SERVICE_API_KEY"))
+	importExerciseUC := usecases.NewImportExercisesUseCase(exerciseAdapter, storageAdapter, exerciseRepo)
 
 	// Controllers
 	exerciseHandler := handlers.NewExerciseHandler(importExerciseUC, exerciseRepo)
