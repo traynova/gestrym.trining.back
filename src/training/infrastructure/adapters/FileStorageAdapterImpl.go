@@ -56,10 +56,10 @@ func (a *FileStorageAdapterImpl) UploadFromURL(url string, service string) (stri
 		if (filepath.Base(url) == "image" || filepath.Base(url) == "image/") && (filepath.Ext(filename) == "" || filepath.Ext(filename) == ".gif") {
 			contentType = "image/gif"
 		} else {
-			contentType = "image/gif" 
+			contentType = "image/gif"
 		}
 	}
-	
+
 	// Ensure filename has an appropriate extension if missing
 	if filepath.Ext(filename) == "" {
 		if contentType == "image/gif" {
@@ -127,9 +127,6 @@ func (a *FileStorageAdapterImpl) UploadFromReader(reader io.Reader, filename str
 
 	var result struct {
 		CollectionID string `json:"collection_id"`
-		Data         []struct {
-			CollectionID string `json:"collection_id"`
-		} `json:"data"`
 	}
 
 	respBody, err := io.ReadAll(res.Body)
@@ -144,10 +141,6 @@ func (a *FileStorageAdapterImpl) UploadFromReader(reader io.Reader, filename str
 	// Try to find collectionId in response
 	if result.CollectionID != "" {
 		return result.CollectionID, nil
-	}
-
-	if len(result.Data) > 0 && result.Data[0].CollectionID != "" {
-		return result.Data[0].CollectionID, nil
 	}
 
 	return "", fmt.Errorf("collectionId not found in storage service response")

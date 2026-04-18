@@ -63,12 +63,16 @@ Training entities (like `Exercises`) are linked to multimedia files through a `C
 - **Storage Workflow**: When importing or creating entities with files, the `training-service` communicates with the `file-service` internally.
 - **`FileStorageAdapter`**: Used to upload files (from URLs or Readers) to the storage service.
 - **Collection-based group**: Multiple files (images, videos, gifs) per exercise are grouped under the same `CollectionID`.
+- **Separation of Responsibilities**: 
+    - The `training-service` **only** stores the `CollectionID`. 
+    - It does **not** maintain a `Files` model nor does it fetch file details (URLs, metadata) from the storage service internally during typical GET requests.
+    - Fetching the list of files or individual file URLs for a given `CollectionID` is the responsibility of the client (frontend) or the storage service via its own public/internal endpoints.
 - **Environment Variables**:
   - `STORAGE_SERVICE_URL`: Endpoint of the file-service.
   - `STORAGE_SERVICE_API_KEY`: X-API-Key for internal authentication with the storage service.
 
 ---
-*Last updated: 2026-04-17 (Added File Storage integration for Exercises)*
+*Last updated: 2026-04-18 (Refined File Storage integration and Separation of Concerns)*
 
 **Swagger Documentation:**
 - Swagger definitions live within the `docs/` folder.
