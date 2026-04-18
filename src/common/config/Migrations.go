@@ -15,6 +15,11 @@ func MigrateDB() (IDatabaseConnection, error) {
 	//Se agregan los modelos de base de datos
 	err := db.AutoMigrate(
 		&models.Exercise{},
+		&models.Food{},
+		&models.FoodCategory{},
+		&models.Workout{},
+		&models.WorkoutExercise{},
+		&models.WorkoutSet{},
 	)
 
 	if err != nil {

@@ -57,31 +57,37 @@ The backend exposes RESTful APIs using standard JSON payloads. All routes are do
 **Available Endpoints (`training-service`):**
 - **`GET /gestrym-training/public/exercises`**: Retrieves all exercises. Accepts `?bodyPart=` and `?target=` query filters.
 - **`GET /gestrym-training/public/exercises/:id`**: Retrieves details of a specific exercise by its unique GORM ID.
-- **`POST /gestrym-training/public/exercises/import`**: Triggers the manual import/sync process (Admin/System only). **Enriches exercises by uploading external media (GIFs) to the internal `file-service` and storing the resulting `collectionId`**.
-- **`GET /gestrym-training/public/workouts/:id/full`**: Retrieves a complete workout structure, including exercises and sets, optimized for frontend rendering (React).
-- **`GET /gestrym-training/public/foods`**: Searches the food catalog. Accepts `?search=` filter.
+- **`POST /gestrym-training/public/exercises/import`**: Triggers the manual import/sync process for exercises (ExerciseDB).
+- **`GET /gestrym-training/public/workouts/:id/full`**: Retrieves a complete workout structure, including exercises and sets, optimized for frontend rendering (React). Contains nested `WorkoutExercise` and `WorkoutSet` data.
+- **`GET /gestrym-training/public/foods`**: Searches the food catalog. Supports `?search=`, `?page=`, and `?limit=` (default 1/10). Returns results with categories and total count.
 - **`GET /gestrym-training/public/foods/:id`**: Retrieves specific nutritional details for a food item.
+- **`POST /gestrym-training/public/foods/import`**: Triggers the manual import process from **USDA FoodData Central** and fetches images from **Pexels**.
 
 ## 9. 📦 File Storage Integration
-Training entities (like `Exercises`) are linked to multimedia files through a `CollectionID`. 
+Training entities (like `Exercises` and `Foods`) are linked to multimedia files through a `CollectionID`. 
 - **Storage Workflow**: When importing or creating entities with files, the `training-service` communicates with the `file-service` internally.
 - **`FileStorageAdapter`**: Used to upload files (from URLs or Readers) to the storage service.
-- **Collection-based group**: Multiple files (images, videos, gifs) per exercise are grouped under the same `CollectionID`.
-- **Separation of Responsibilities**: 
-    - The `training-service` **only** stores the `CollectionID`. 
-    - It does **not** maintain a `Files` model nor does it fetch file details (URLs, metadata) from the storage service internally during typical GET requests.
-    - Fetching the list of files or individual file URLs for a given `CollectionID` is the responsibility of the client (frontend) or the storage service via its own public/internal endpoints.
+- **Collection-based group**: Multiple files (images, videos, gifs) per entity are grouped under the same `CollectionID`.
 - **Environment Variables**:
   - `STORAGE_SERVICE_URL`: Endpoint of the file-service.
-  - `STORAGE_SERVICE_API_KEY`: X-API-Key for internal authentication with the storage service.
+  - `STORAGE_SERVICE_API_KEY`: X-API-Key for internal authentication.
+  - `USDA_API_KEY`: Key for USDA FoodData Central API.
+  - `PEXELS_API_KEY`: Key for Pexels Image API.
+  - `RAPID_API_KEY`: Key for ExerciseDB (RapidAPI).
 
 ## 10. 🥗 Nutrition & Workout Modeling
-- **Food Catalog**: Foods are stored locally to avoid external API dependency at runtime (similar to exercises).
-- **Workout Tree**: Workouts are structured hierarchically: `Workout` -> `WorkoutExercise` -> `WorkoutSet`. 
-- **Frontend DTOs**: Use specialized DTOs in the Application layer to assemble nested structures, reducing the number of requests and logic required on the frontend.
+- **Food Catalog**: Foods are imported from USDA and stored locally. Mapped nutrients: Calories, Protein, Carbs, Fats.
+- **Image Management**: 
+    - Food images are fetched from **Pexels** during import using normalized food names.
+    - Images are uploaded to MinIO via `file-service`.
+    - `Food` model stores `ImageURL` (MinIO link) and `CollectionID`.
+- **Optimization**:
+    - **N+1 Avoidance**: Use GORM `Preload` for hierarchical data (Workouts -> Exercises -> Sets).
+    - **Pagination**: Compulsory for food search and exercise listings.
+- **Frontend DTOs**: Use specialized DTOs (e.g., `WorkoutFullResponse`) to assemble nested structures.
 
 ---
-*Last updated: 2026-04-18 (Implemented Nutrition module and complex Workout structures)*
+*Last updated: 2026-04-18 (USDA/Pexels Integration, Pagination, and Query Optimization)*
 
 **Swagger Documentation:**
 - Swagger definitions live within the `docs/` folder.

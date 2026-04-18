@@ -132,6 +132,22 @@ paths:
       summary: Get food by ID
       tags:
       - Nutrition
+  /public/foods/import:
+    post:
+      consumes:
+      - application/json
+      description: Triggers a one-time import of basic food categories from USDA API.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Manual import of foods from USDA
+      tags:
+      - Nutrition
   /public/workouts/{id}/full:
     get:
       consumes:

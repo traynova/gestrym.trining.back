@@ -20,6 +20,7 @@ import (
 	trainingRepos "gestrym-training/src/training/infrastructure/repositories"
 	nutritionRepos "gestrym-training/src/nutrition/infrastructure/repositories"
 	"gestrym-training/src/training/interfaces/http/handlers"
+	nutritionAdapters "gestrym-training/src/nutrition/infrastructure/adapters"
 	nutritionHandlers "gestrym-training/src/nutrition/interfaces/http/handlers"
 	nutritionUseCases "gestrym-training/src/nutrition/application/usecases"
 )
@@ -82,6 +83,9 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	// Adapters & Services
 	exerciseAdapter := adapters.NewExerciseDBAdapterImpl("", viper.GetString("RAPID_API_KEY"), viper.GetString("RAPID_API_HOST"))
 	storageAdapter := adapters.NewFileStorageAdapterImpl(viper.GetString("STORAGE_SERVICE_URL"), viper.GetString("STORAGE_SERVICE_API_KEY"))
+	usdaAdapter := nutritionAdapters.NewUSDAAdapterImpl("", viper.GetString("USDA_API_KEY"))
+	pexelsAdapter := nutritionAdapters.NewPexelsAdapterImpl(viper.GetString("PEXELS_API_KEY"))
+	storageService := nutritionAdapters.NewStorageServiceAdapterImpl(storageAdapter)
 	
 	// Use Cases
 	importExerciseUC := usecases.NewImportExercisesUseCase(exerciseAdapter, storageAdapter, exerciseRepo)
@@ -89,11 +93,12 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	
 	searchFoodsUC := nutritionUseCases.NewSearchFoodsUseCase(foodRepo)
 	getFoodByIDUC := nutritionUseCases.NewGetFoodByIDUseCase(foodRepo)
+	importFoodsUC := nutritionUseCases.NewImportFoodsWithImagesUseCase(foodRepo, usdaAdapter, pexelsAdapter, storageService)
 
 	// Controllers
 	exerciseHandler := handlers.NewExerciseHandler(importExerciseUC, exerciseRepo)
 	workoutHandler := handlers.NewWorkoutHandler(getWorkoutFullUC)
-	foodHandler := nutritionHandlers.NewFoodHandler(searchFoodsUC, getFoodByIDUC)
+	foodHandler := nutritionHandlers.NewFoodHandler(searchFoodsUC, getFoodByIDUC, importFoodsUC)
 
 	// Add server group
 	r.serverGroup = serverInstance.Group(docs.SwaggerInfo.BasePath)
@@ -121,6 +126,7 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	{
 		foodsGroup.GET("", foodHandler.SearchFoods)
 		foodsGroup.GET("/:id", foodHandler.GetFoodByID)
+		foodsGroup.POST("/import", foodHandler.ImportFoods)
 	}
 
 	r.privateGroup = r.serverGroup.Group("/private")

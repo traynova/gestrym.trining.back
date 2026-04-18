@@ -18,3 +18,5 @@ STORAGE_SERVICE_API_KEY: $1M0NM0V1L1D4D
 RAPID_API_KEY: be1378e8e8msh4f1a8d555ebefbdp1df714jsndb554a4345f4
 RAPID_API_HOST: exercisedb.p.rapidapi.com
 STORAGE_SERVICE_URL: http://172.20.198.1:60200/gestrym-storage
+USDA_API_KEY: "VchL5zD3iV1A9Wbn4h7D1iUhryiscpUFHY8RJD1M"
+PEXELS_API_KEY: "your_pexels_api_key"

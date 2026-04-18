@@ -77,36 +77,41 @@ func (a *FileStorageAdapterImpl) UploadFromURL(url string, service string) (stri
 }
 
 func (a *FileStorageAdapterImpl) UploadFromReader(reader io.Reader, filename string, contentType string, service string) (string, error) {
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
+	pr, pw := io.Pipe()
+	writer := multipart.NewWriter(pw)
 
-	// Add service field
-	err := writer.WriteField("service", service)
-	if err != nil {
-		return "", err
-	}
+	errChan := make(chan error, 1)
 
-	// Add files field with correct Content-Type
-	h := make(textproto.MIMEHeader)
-	h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="files"; filename="%s"`, filename))
-	h.Set("Content-Type", contentType)
-	part, err := writer.CreatePart(h)
-	if err != nil {
-		return "", err
-	}
-	_, err = io.Copy(part, reader)
-	if err != nil {
-		return "", err
-	}
+	// Goroutine to write multipart data to the pipe
+	go func() {
+		defer pw.Close()
+		defer writer.Close()
 
-	err = writer.Close()
-	if err != nil {
-		return "", err
-	}
+		// Add service field
+		if err := writer.WriteField("service", service); err != nil {
+			errChan <- fmt.Errorf("failed to write service field: %w", err)
+			return
+		}
 
-	req, err := http.NewRequest("POST", a.BaseURL+"/internal/files/upload", body)
+		// Add files field with correct Content-Type
+		h := make(textproto.MIMEHeader)
+		h.Set("Content-Disposition", fmt.Sprintf(`form-data; name="files"; filename="%s"`, filename))
+		h.Set("Content-Type", contentType)
+		part, err := writer.CreatePart(h)
+		if err != nil {
+			errChan <- fmt.Errorf("failed to create multipart part: %w", err)
+			return
+		}
+
+		if _, err := io.Copy(part, reader); err != nil {
+			errChan <- fmt.Errorf("failed to copy reader to part: %w", err)
+			return
+		}
+	}()
+
+	req, err := http.NewRequest("POST", a.BaseURL+"/internal/files/upload", pr)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create upload request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -116,32 +121,33 @@ func (a *FileStorageAdapterImpl) UploadFromReader(reader io.Reader, filename str
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to execute upload request: %w", err)
 	}
 	defer res.Body.Close()
 
+	// Check for errors from the writer goroutine
+	select {
+	case err := <-errChan:
+		return "", err
+	default:
+	}
+
 	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
-		body, _ := io.ReadAll(res.Body)
-		return "", fmt.Errorf("storage service returned error: status %d, body: %s", res.StatusCode, string(body))
+		respBody, _ := io.ReadAll(res.Body)
+		return "", fmt.Errorf("storage service error (status %d): %s", res.StatusCode, string(respBody))
 	}
 
 	var result struct {
 		CollectionID string `json:"collection_id"`
 	}
 
-	respBody, err := io.ReadAll(res.Body)
-	if err != nil {
-		return "", err
+	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode storage service response: %w", err)
 	}
 
-	if err := json.Unmarshal(respBody, &result); err != nil {
-		return "", fmt.Errorf("failed to parse storage service response: %w", err)
+	if result.CollectionID == "" {
+		return "", fmt.Errorf("collectionId not found in storage response")
 	}
 
-	// Try to find collectionId in response
-	if result.CollectionID != "" {
-		return result.CollectionID, nil
-	}
-
-	return "", fmt.Errorf("collectionId not found in storage service response")
+	return result.CollectionID, nil
 }

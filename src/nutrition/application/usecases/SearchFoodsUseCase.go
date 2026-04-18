@@ -13,6 +13,6 @@ func NewSearchFoodsUseCase(repo interfaces.FoodRepository) *SearchFoodsUseCase {
 	return &SearchFoodsUseCase{Repo: repo}
 }
 
-func (uc *SearchFoodsUseCase) Execute(name string) ([]models.Food, error) {
-	return uc.Repo.SearchByName(name)
+func (uc *SearchFoodsUseCase) Execute(name string, page int, pageSize int) ([]models.Food, int64, error) {
+	return uc.Repo.SearchByName(name, page, pageSize)
 }

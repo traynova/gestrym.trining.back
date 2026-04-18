@@ -170,6 +170,30 @@ const docTemplate = `{
                 }
             }
         },
+        "/public/foods/import": {
+            "post": {
+                "description": "Triggers a one-time import of basic food categories from USDA API.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Nutrition"
+                ],
+                "summary": "Manual import of foods from USDA",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/public/foods/{id}": {
             "get": {
                 "description": "Retrieve details of a specific food item.",
