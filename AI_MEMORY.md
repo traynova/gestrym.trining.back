@@ -86,8 +86,19 @@ Training entities (like `Exercises` and `Foods`) are linked to multimedia files 
     - **Pagination**: Compulsory for food search and exercise listings.
 - **Frontend DTOs**: Use specialized DTOs (e.g., `WorkoutFullResponse`) to assemble nested structures.
 
+## 11. 🚀 Batch ETL Pipeline (Foods)
+To populate the food catalog at scale, a standalone ETL (Extract, Transform, Load) pipeline is implemented in `/internal/etl`.
+- **Extractor**: Fetches raw data from USDA FoodData Central. Supports pagination and query-based extraction.
+- **Transformer**: Normalizes food names, extracts nutritional macros (Calories, Protein, Carbs, Fats), and fetches high-quality images via Pexels.
+- **Loader**: Uploads images to MinIO via streaming and performs bulk/upsert operations in PostgreSQL via GORM.
+- **Concurrency & Reliability**:
+    - **Worker Pool**: Uses goroutines and channels (`jobs` and `results`) to parallelize the Transform and Image Fetching stages.
+    - **Retries**: Implements a 3-attempt retry mechanism with exponential backoff for external API calls.
+    - **Deduplication**: Ensures no duplicate food names are inserted into the database.
+- **Execution**: Run via CLI: `go run cmd/etl-foods/main.go`.
+
 ---
-*Last updated: 2026-04-18 (USDA/Pexels Integration, Pagination, and Query Optimization)*
+*Last updated: 2026-04-18 (Implemented standalone Batch ETL Food Pipeline)*
 
 **Swagger Documentation:**
 - Swagger definitions live within the `docs/` folder.

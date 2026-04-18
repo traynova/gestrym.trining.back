@@ -87,9 +87,15 @@ func (a *FileStorageAdapterImpl) UploadFromReader(reader io.Reader, filename str
 		defer pw.Close()
 		defer writer.Close()
 
-		// Add service field
+		// Add service field (compatible with some versions)
 		if err := writer.WriteField("service", service); err != nil {
 			errChan <- fmt.Errorf("failed to write service field: %w", err)
+			return
+		}
+
+		// Add group field (as requested by user "por grupo...")
+		if err := writer.WriteField("group", service); err != nil {
+			errChan <- fmt.Errorf("failed to write group field: %w", err)
 			return
 		}
 
@@ -118,6 +124,8 @@ func (a *FileStorageAdapterImpl) UploadFromReader(reader io.Reader, filename str
 	req.Header.Set("X-API-Key", a.APIKey)
 	req.Header.Set("accept", "application/json")
 
+	log.Printf("[DEBUG] Sending POST to %s with service=%s", a.BaseURL+"/internal/files/upload", service)
+
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
@@ -134,6 +142,7 @@ func (a *FileStorageAdapterImpl) UploadFromReader(reader io.Reader, filename str
 
 	if res.StatusCode != http.StatusOK && res.StatusCode != http.StatusCreated {
 		respBody, _ := io.ReadAll(res.Body)
+		log.Printf("[ERROR] Storage service upload failed: %d - %s", res.StatusCode, string(respBody))
 		return "", fmt.Errorf("storage service error (status %d): %s", res.StatusCode, string(respBody))
 	}
 

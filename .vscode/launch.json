@@ -19,6 +19,20 @@
       ]
     },
     {
+      "name": "Debug Import Foods",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/cmd/etl-foods",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "CONFIG_PATH": "${workspaceFolder}/deployment/env_local.yaml"
+      },
+      "args": [
+        "--local=true"
+      ]
+    },
+    {
       "name": "Go program",
       "type": "go",
       "request": "launch",
