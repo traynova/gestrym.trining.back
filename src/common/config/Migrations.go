@@ -20,6 +20,10 @@ func MigrateDB() (IDatabaseConnection, error) {
 		&models.Workout{},
 		&models.WorkoutExercise{},
 		&models.WorkoutSet{},
+		// Training Plan models
+		&models.TrainingPlan{},
+		&models.TrainingDay{},
+		&models.TrainingPlanAssignment{},
 	)
 
 	if err != nil {

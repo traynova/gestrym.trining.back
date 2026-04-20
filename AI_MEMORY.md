@@ -105,3 +105,80 @@ To populate the food catalog at scale, a standalone ETL (Extract, Transform, Loa
 - They are auto-generated from `// @Summary`, `// @Description`, etc., annotations above specific Gin Handler functions.
 - Always run `swag init` when altering or building new endpoints to maintain a fresh contract for the frontend.
 - Frontend developers can browse the interactive Swagger UI dynamically at **`GET /gestrym-training/swagger/index.html`** when the server is running locally.
+
+---
+
+## 12. 🗓️ Training Plans Module
+
+*Last updated: 2026-04-19 (Implemented Training Plans: plans, days, assignment, RBAC)*
+
+### Models (in `common/models`)
+
+| Model | Description |
+|---|---|
+| `TrainingPlan` | Weekly/monthly/custom fitness plan. Has `AssignedTo` (nullable), `CreatedBy`, `IsTemplate`, `DurationDays`. |
+| `TrainingDay` | One day within a plan. Links to `WorkoutID`. Has `DayNumber` (1..N) and `Notes`. |
+| `TrainingPlanAssignment` | (Future) Explicit assignment record with `AssignedBy` (trainer), `UserID`, `StartDate`. |
+
+### Architecture Location
+
+```
+src/common/models/
+  TrainingPlan.go
+  TrainingDay.go
+  TrainingPlanAssignment.go
+
+src/training/domain/interfaces/
+  TrainingPlanRepository.go
+  TrainingDayRepository.go
+
+src/training/infrastructure/repositories/
+  TrainingPlanRepositoryImpl.go      ← GORM, Preload chains to avoid N+1
+  TrainingDayRepositoryImpl.go
+
+src/training/application/usecases/
+  CreateTrainingPlanUseCase.go
+  AssignTrainingPlanUseCase.go       ← auto-clones if plan already assigned
+  GetTrainingPlanUseCase.go          ← RBAC built-in (user can only see own plans)
+  GetUserTrainingPlansUseCase.go
+  AddTrainingDayUseCase.go           ← validates DayNumber <= DurationDays
+  TrainingPlanMapper.go              ← shared DTO mappers
+
+src/training/application/dtos/
+  TrainingPlanDTO.go                 ← request + response structs
+
+src/training/interfaces/http/handlers/
+  TrainingPlanHandler.go             ← 5 Gin endpoints
+```
+
+### Endpoints (`/gestrym-training/private/training-plans`)
+
+| Method | Path | Role | Description |
+|---|---|---|---|
+| POST | `/` | TRAINER, USER | Create a training plan |
+| GET | `/:id` | TRAINER, USER | Get plan by ID (users only see own) |
+| GET | `/user/:userId` | TRAINER, USER | Get all plans for a user |
+| POST | `/:id/assign` | **TRAINER ONLY** | Assign plan to user (auto-clones if needed) |
+| POST | `/:id/days` | TRAINER, USER | Add a workout day to a plan |
+| POST | `/:id/clone` | TRAINER, USER | Clone a template plan to a user |
+| PATCH | `/:id/days/:dayId/complete` | TRAINER, USER | Mark a training day as completed/not |
+
+### RBAC Rules
+- All routes under `/private` require JWT (via `SetupJWTMiddleware()`).
+- `/assign` additionally requires `RequireRoles(RoleCoach, RoleAdmin)`.
+- For GET endpoints, users (RoleCliente = 4) can only access plans where `AssignedTo = their own userID`.
+- For `/complete`, only the assigned user or a trainer/admin can update progress.
+
+### Key Business Rules
+- **DayNumber validation**: `AddTrainingDayUseCase` ensures `1 ≤ dayNumber ≤ plan.DurationDays`.
+- **Auto-clone on re-assign**: If a trainer tries to assign a plan already assigned to another user, the system clones the plan + all its days before assigning.
+- **Deep Cloning**: `CloneTrainingPlanUseCase` performs a deep copy of the plan and all its associated days.
+- **Progress Tracking**: Each day has an `IsCompleted` flag. Clones start with all days as uncompleted.
+- **Template support**: `IsTemplate = true` makes a plan reusable. Templates have `AssignedTo = null`.
+
+### Future Considerations
+- `TrainingPlanAssignment` model is ready to store `StartDate` for assignment history.
+- `AssignTrainingPlanUseCase` accepts `startDate` but doesn't persist it yet (marked with `_ startDate`).
+- Future AI plan generation should create a `TrainingPlan` with `IsTemplate = false` and set `CreatedBy = AI_AGENT_ID` or similar.
+- Plan cloning (`CloneTrainingPlanUseCase`) can be built on top of the existing clone logic in `AssignTrainingPlanUseCase`.
+

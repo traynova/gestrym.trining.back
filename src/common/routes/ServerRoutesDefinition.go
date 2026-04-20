@@ -10,19 +10,19 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/spf13/viper"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/spf13/viper"
 
 	"gestrym-training/src/common/config"
+	nutritionUseCases "gestrym-training/src/nutrition/application/usecases"
+	nutritionAdapters "gestrym-training/src/nutrition/infrastructure/adapters"
+	nutritionRepos "gestrym-training/src/nutrition/infrastructure/repositories"
+	nutritionHandlers "gestrym-training/src/nutrition/interfaces/http/handlers"
 	"gestrym-training/src/training/application/usecases"
 	"gestrym-training/src/training/infrastructure/adapters"
 	trainingRepos "gestrym-training/src/training/infrastructure/repositories"
-	nutritionRepos "gestrym-training/src/nutrition/infrastructure/repositories"
 	"gestrym-training/src/training/interfaces/http/handlers"
-	nutritionAdapters "gestrym-training/src/nutrition/infrastructure/adapters"
-	nutritionHandlers "gestrym-training/src/nutrition/interfaces/http/handlers"
-	nutritionUseCases "gestrym-training/src/nutrition/application/usecases"
 )
 
 type routesDefinition struct {
@@ -79,6 +79,8 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	exerciseRepo := trainingRepos.NewExerciseRepositoryImpl(db)
 	workoutRepo := trainingRepos.NewWorkoutRepositoryImpl(db)
 	foodRepo := nutritionRepos.NewFoodRepositoryImpl(db)
+	trainingPlanRepo := trainingRepos.NewTrainingPlanRepositoryImpl(db)
+	trainingDayRepo := trainingRepos.NewTrainingDayRepositoryImpl(db)
 
 	// Adapters & Services
 	exerciseAdapter := adapters.NewExerciseDBAdapterImpl("", viper.GetString("RAPID_API_KEY"), viper.GetString("RAPID_API_HOST"))
@@ -86,19 +88,37 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	usdaAdapter := nutritionAdapters.NewUSDAAdapterImpl("", viper.GetString("USDA_API_KEY"))
 	pexelsAdapter := nutritionAdapters.NewPexelsAdapterImpl(viper.GetString("PEXELS_API_KEY"))
 	storageService := nutritionAdapters.NewStorageServiceAdapterImpl(storageAdapter)
-	
+
 	// Use Cases
 	importExerciseUC := usecases.NewImportExercisesUseCase(exerciseAdapter, storageAdapter, exerciseRepo)
 	getWorkoutFullUC := usecases.NewGetWorkoutFullUseCase(workoutRepo)
-	
+
 	searchFoodsUC := nutritionUseCases.NewSearchFoodsUseCase(foodRepo)
 	getFoodByIDUC := nutritionUseCases.NewGetFoodByIDUseCase(foodRepo)
 	importFoodsUC := nutritionUseCases.NewImportFoodsWithImagesUseCase(foodRepo, usdaAdapter, pexelsAdapter, storageService)
+
+	// Training Plan Use Cases
+	createTrainingPlanUC := usecases.NewCreateTrainingPlanUseCase(trainingPlanRepo)
+	assignTrainingPlanUC := usecases.NewAssignTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo)
+	getTrainingPlanUC := usecases.NewGetTrainingPlanUseCase(trainingPlanRepo)
+	getUserTrainingPlansUC := usecases.NewGetUserTrainingPlansUseCase(trainingPlanRepo)
+	addTrainingDayUC := usecases.NewAddTrainingDayUseCase(trainingPlanRepo, trainingDayRepo)
+	cloneTrainingPlanUC := usecases.NewCloneTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo)
+	updateDayCompletionUC := usecases.NewUpdateDayCompletionUseCase(trainingDayRepo, trainingPlanRepo)
 
 	// Controllers
 	exerciseHandler := handlers.NewExerciseHandler(importExerciseUC, exerciseRepo)
 	workoutHandler := handlers.NewWorkoutHandler(getWorkoutFullUC)
 	foodHandler := nutritionHandlers.NewFoodHandler(searchFoodsUC, getFoodByIDUC, importFoodsUC)
+	trainingPlanHandler := handlers.NewTrainingPlanHandler(
+		createTrainingPlanUC,
+		assignTrainingPlanUC,
+		getTrainingPlanUC,
+		getUserTrainingPlansUC,
+		addTrainingDayUC,
+		cloneTrainingPlanUC,
+		updateDayCompletionUC,
+	)
 
 	// Add server group
 	r.serverGroup = serverInstance.Group(docs.SwaggerInfo.BasePath)
@@ -106,7 +126,7 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 
 	// Add groups
 	r.publicGroup = r.serverGroup.Group("/public")
-	
+
 	// Register Exercise endpoints
 	exercisesGroup := r.publicGroup.Group("/exercises")
 	{
@@ -137,9 +157,23 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 
 	r.protectedGroup.Use(middleware.SetupApiKeyMiddleware())
 
-	// Add routes to groups
+	// Register Training Plan endpoints (JWT protected, under /private)
+	trainingPlansGroup := r.privateGroup.Group("/training-plans")
+	{
+		trainingPlansGroup.POST("", trainingPlanHandler.CreateTrainingPlan)
+		trainingPlansGroup.GET("/:id", trainingPlanHandler.GetTrainingPlan)
+		trainingPlansGroup.GET("/user/:userId", trainingPlanHandler.GetUserTrainingPlans)
+		trainingPlansGroup.POST("/:id/assign",
+			middleware.RequireRoles(middleware.RoleCoach, middleware.RoleAdmin),
+			trainingPlanHandler.AssignTrainingPlan,
+		)
+		trainingPlansGroup.POST("/:id/days", trainingPlanHandler.AddTrainingDay)
+		trainingPlansGroup.POST("/:id/clone", trainingPlanHandler.CloneTrainingPlan)
+		trainingPlansGroup.PATCH("/:id/days/:dayId/complete", trainingPlanHandler.UpdateDayCompletion)
+	}
+
+	// Add routes to remaining groups
 	r.addPublicRoutes()
-	r.addPrivateRoutes()
 	r.addInternalRoutes()
 	r.addProtectedRoutes()
 
@@ -175,6 +209,9 @@ func (r *routesDefinition) addPublicRoutes() {
 }
 
 func (r *routesDefinition) addPrivateRoutes() {
+	// Additional private routes can be added here when they require
+	// handler instances instantiated elsewhere. Currently, training plan
+	// routes are registered inline in addRoutes() for scope reasons.
 }
 
 func (r *routesDefinition) addInternalRoutes() {
