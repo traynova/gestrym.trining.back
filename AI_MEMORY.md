@@ -98,7 +98,7 @@ To populate the food catalog at scale, a standalone ETL (Extract, Transform, Loa
 - **Execution**: Run via CLI: `go run cmd/etl-foods/main.go`.
 
 ---
-*Last updated: 2026-04-18 (Implemented standalone Batch ETL Food Pipeline)*
+*Last updated: 2026-04-22 (Implemented AI Plan Adaptation & Nutritional Plan Generation)*
 
 **Swagger Documentation:**
 - Swagger definitions live within the `docs/` folder.
@@ -119,6 +119,7 @@ To populate the food catalog at scale, a standalone ETL (Extract, Transform, Loa
 | `TrainingPlan` | Weekly/monthly/custom fitness plan. Has `AssignedTo` (nullable), `CreatedBy`, `IsTemplate`, `DurationDays`. |
 | `TrainingDay` | One day within a plan. Links to `WorkoutID`. Has `DayNumber` (1..N) and `Notes`. |
 | `TrainingPlanAssignment` | (Future) Explicit assignment record with `AssignedBy` (trainer), `UserID`, `StartDate`. |
+| `NutritionPlan` | Stores daily caloric and macro goals based on user objective (loss, gain, maintenance). |
 
 ### Architecture Location
 
@@ -141,14 +142,21 @@ src/training/application/usecases/
   AssignTrainingPlanUseCase.go       ← auto-clones if plan already assigned
   GetTrainingPlanUseCase.go          ← RBAC built-in (user can only see own plans)
   GetUserTrainingPlansUseCase.go
-  AddTrainingDayUseCase.go           ← validates DayNumber <= DurationDays
+  UpdateDayCompletionUseCase.go      ← updates `IsCompleted` flag
+  AdaptTrainingPlanUseCase.go        ← **New**: Evaluates completion rate and auto-clones for intensity level-up.
   TrainingPlanMapper.go              ← shared DTO mappers
 
 src/training/application/dtos/
   TrainingPlanDTO.go                 ← request + response structs
 
+src/nutrition/application/usecases/
+  GenerateNutritionPlanUseCase.go    ← **New**: Calculates TDEE/Macros using Mifflin-St Jeor formula.
+
 src/training/interfaces/http/handlers/
-  TrainingPlanHandler.go             ← 5 Gin endpoints
+  TrainingPlanHandler.go             ← Added `/adapt` endpoint
+
+src/nutrition/interfaces/http/handlers/
+  NutritionPlanHandler.go            ← **New**: Handles `/nutrition-plans/generate`
 ```
 
 ### Endpoints (`/gestrym-training/private/training-plans`)
@@ -158,6 +166,7 @@ src/training/interfaces/http/handlers/
 | POST | `/` | TRAINER, USER | Create a training plan |
 | GET | `/:id` | TRAINER, USER | Get plan by ID (users only see own) |
 | GET | `/user/:userId` | TRAINER, USER | Get all plans for a user |
+| POST | `/adapt` | USER | Adapt latest plan based on completion progress |
 | POST | `/:id/assign` | **TRAINER ONLY** | Assign plan to user (auto-clones if needed) |
 | POST | `/:id/days` | TRAINER, USER | Add a workout day to a plan |
 | POST | `/:id/clone` | TRAINER, USER | Clone a template plan to a user |
@@ -174,7 +183,20 @@ src/training/interfaces/http/handlers/
 - **Auto-clone on re-assign**: If a trainer tries to assign a plan already assigned to another user, the system clones the plan + all its days before assigning.
 - **Deep Cloning**: `CloneTrainingPlanUseCase` performs a deep copy of the plan and all its associated days.
 - **Progress Tracking**: Each day has an `IsCompleted` flag. Clones start with all days as uncompleted.
+- **AI Adaptation**: `/adapt` analyzes the latest plan. If completion > 80%, it clones the plan with an "Adapted" tag for progressive overload.
 - **Template support**: `IsTemplate = true` makes a plan reusable. Templates have `AssignedTo = null`.
+
+### Nutrition Plans (`/gestrym-training/private/nutrition-plans`)
+
+| Method | Path | Role | Description |
+|---|---|---|---|
+| POST | `/generate` | USER | Generate macro/caloric goals based on weight, height, age, and objective. |
+
+**Objective logic**:
+- `weight_loss`: TDEE - 500 kcal
+- `muscle_gain`: TDEE + 300 kcal
+- `maintenance`: TDEE
+- **Macros**: 2g Protein/kg, 0.8g Fat/kg, balance in Carbs.
 
 ### Future Considerations
 - `TrainingPlanAssignment` model is ready to store `StartDate` for assignment history.

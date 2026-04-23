@@ -68,3 +68,22 @@ func (r *TrainingPlanRepositoryImpl) FindTemplates() ([]models.TrainingPlan, err
 	err := r.DB.Where("is_template = ?", true).Find(&plans).Error
 	return plans, err
 }
+
+// FindLatestByUserID returns the most recently created plan for a user.
+func (r *TrainingPlanRepositoryImpl) FindLatestByUserID(userID uint) (*models.TrainingPlan, error) {
+	var plan models.TrainingPlan
+	err := r.DB.
+		Where("assigned_to = ?", userID).
+		Preload("Days").
+		Preload("Days.Workout").
+		Order("created_at DESC").
+		First(&plan).Error
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &plan, nil
+}

@@ -19,6 +19,7 @@ type TrainingPlanHandler struct {
 	AddDayUC              *usecases.AddTrainingDayUseCase
 	CloneUC               *usecases.CloneTrainingPlanUseCase
 	UpdateDayCompletionUC *usecases.UpdateDayCompletionUseCase
+	AdaptPlanUC           *usecases.AdaptTrainingPlanUseCase
 }
 
 func NewTrainingPlanHandler(
@@ -29,6 +30,7 @@ func NewTrainingPlanHandler(
 	addDayUC *usecases.AddTrainingDayUseCase,
 	cloneUC *usecases.CloneTrainingPlanUseCase,
 	updateDayCompletionUC *usecases.UpdateDayCompletionUseCase,
+	adaptPlanUC *usecases.AdaptTrainingPlanUseCase,
 ) *TrainingPlanHandler {
 	return &TrainingPlanHandler{
 		CreateUC:              createUC,
@@ -38,6 +40,7 @@ func NewTrainingPlanHandler(
 		AddDayUC:              addDayUC,
 		CloneUC:               cloneUC,
 		UpdateDayCompletionUC: updateDayCompletionUC,
+		AdaptPlanUC:           adaptPlanUC,
 	}
 }
 
@@ -336,4 +339,31 @@ func (h *TrainingPlanHandler) UpdateDayCompletion(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "progress updated successfully"})
+}
+
+// AdaptTrainingPlan godoc
+// @Summary      Adapt training plan based on progress
+// @Description  Analyzes user progress and creates an adapted version of the latest plan if completion is high.
+// @Tags         TrainingPlans
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Router       /private/training-plans/adapt [post]
+func (h *TrainingPlanHandler) AdaptTrainingPlan(c *gin.Context) {
+	userID, ok := getUserIDFromCtx(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthenticated"})
+		return
+	}
+
+	plan, recommendation, err := h.AdaptPlanUC.Execute(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":           plan,
+		"recommendation": recommendation,
+	})
 }

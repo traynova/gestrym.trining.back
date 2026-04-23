@@ -81,6 +81,7 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	foodRepo := nutritionRepos.NewFoodRepositoryImpl(db)
 	trainingPlanRepo := trainingRepos.NewTrainingPlanRepositoryImpl(db)
 	trainingDayRepo := trainingRepos.NewTrainingDayRepositoryImpl(db)
+	nutritionPlanRepo := nutritionRepos.NewNutritionPlanRepositoryImpl(db)
 
 	// Adapters & Services
 	exerciseAdapter := adapters.NewExerciseDBAdapterImpl("", viper.GetString("RAPID_API_KEY"), viper.GetString("RAPID_API_HOST"))
@@ -105,6 +106,9 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	addTrainingDayUC := usecases.NewAddTrainingDayUseCase(trainingPlanRepo, trainingDayRepo)
 	cloneTrainingPlanUC := usecases.NewCloneTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo)
 	updateDayCompletionUC := usecases.NewUpdateDayCompletionUseCase(trainingDayRepo, trainingPlanRepo)
+	adaptTrainingPlanUC := usecases.NewAdaptTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo)
+
+	generateNutritionPlanUC := nutritionUseCases.NewGenerateNutritionPlanUseCase(nutritionPlanRepo)
 
 	// Controllers
 	exerciseHandler := handlers.NewExerciseHandler(importExerciseUC, exerciseRepo)
@@ -118,7 +122,10 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 		addTrainingDayUC,
 		cloneTrainingPlanUC,
 		updateDayCompletionUC,
+		adaptTrainingPlanUC,
 	)
+
+	nutritionPlanHandler := nutritionHandlers.NewNutritionPlanHandler(generateNutritionPlanUC)
 
 	// Add server group
 	r.serverGroup = serverInstance.Group(docs.SwaggerInfo.BasePath)
@@ -170,6 +177,13 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 		trainingPlansGroup.POST("/:id/days", trainingPlanHandler.AddTrainingDay)
 		trainingPlansGroup.POST("/:id/clone", trainingPlanHandler.CloneTrainingPlan)
 		trainingPlansGroup.PATCH("/:id/days/:dayId/complete", trainingPlanHandler.UpdateDayCompletion)
+		trainingPlansGroup.POST("/adapt", trainingPlanHandler.AdaptTrainingPlan)
+	}
+
+	// Register Nutrition Plan endpoints (JWT protected)
+	nutritionPlansGroup := r.privateGroup.Group("/nutrition-plans")
+	{
+		nutritionPlansGroup.POST("/generate", nutritionPlanHandler.GenerateNutritionPlan)
 	}
 
 	// Add routes to remaining groups

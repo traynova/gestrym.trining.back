@@ -18,4 +18,7 @@ type TrainingPlanRepository interface {
 
 	// FindTemplates returns all plans marked as IsTemplate = true.
 	FindTemplates() ([]models.TrainingPlan, error)
+
+	// FindLatestByUserID returns the most recently created plan for a user.
+	FindLatestByUserID(userID uint) (*models.TrainingPlan, error)
 }
