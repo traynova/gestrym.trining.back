@@ -15,6 +15,456 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/private/nutrition-plans/generate": {
+            "post": {
+                "description": "Calculates macros and creates a plan based on user metrics and goals.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "nutrition"
+                ],
+                "summary": "Generate nutritional plan",
+                "parameters": [
+                    {
+                        "description": "Plan generation data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/usecases.GenerateNutritionPlanInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/models.NutritionPlan"
+                        }
+                    }
+                }
+            }
+        },
+        "/private/training-plans": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new training plan. Accessible by trainers (role 3) and regular users (role 4).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TrainingPlans"
+                ],
+                "summary": "Create a training plan",
+                "parameters": [
+                    {
+                        "description": "Plan data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.CreateTrainingPlanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/private/training-plans/:id/clone": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Clones an existing plan (template or other) and assigns it to a specific user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TrainingPlans"
+                ],
+                "summary": "Clone a training plan for a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Plan ID to clone",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Clone data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.CloneTrainingPlanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/private/training-plans/:id/days/:dayId/complete": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks a training day as completed or not.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TrainingPlans"
+                ],
+                "summary": "Update training day progress",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day ID",
+                        "name": "dayId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Progress data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.UpdateDayCompletionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/private/training-plans/adapt": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Analyzes user progress and creates an adapted version of the latest plan if completion is high.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TrainingPlans"
+                ],
+                "summary": "Adapt training plan based on progress",
+                "responses": {}
+            }
+        },
+        "/private/training-plans/user/{userId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all training plans assigned to a specific user. Regular users can only query their own.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TrainingPlans"
+                ],
+                "summary": "Get training plans for a user",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Target User ID",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/private/training-plans/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves a training plan with its days and workouts. Users can only see their assigned plans.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TrainingPlans"
+                ],
+                "summary": "Get training plan by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Training Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/private/training-plans/{id}/assign": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Assigns an existing training plan to a user. Only accessible by trainers (role 3).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TrainingPlans"
+                ],
+                "summary": "Assign training plan to a user (TRAINER ONLY)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Training Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Assignment data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.AssignTrainingPlanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/private/training-plans/{id}/days": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a workout day to an existing training plan. DayNumber must be within the plan's duration.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TrainingPlans"
+                ],
+                "summary": "Add a day to a training plan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Training Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Day data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dtos.AddTrainingDayRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/public/exercises": {
             "get": {
                 "description": "Retrieve all exercises. Optionally filter by bodyPart and target.",
@@ -257,6 +707,153 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "dtos.AddTrainingDayRequest": {
+            "type": "object",
+            "required": [
+                "dayNumber",
+                "workoutId"
+            ],
+            "properties": {
+                "dayNumber": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "notes": {
+                    "type": "string"
+                },
+                "workoutId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.AssignTrainingPlanRequest": {
+            "type": "object",
+            "required": [
+                "startDate",
+                "userId"
+            ],
+            "properties": {
+                "startDate": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.CloneTrainingPlanRequest": {
+            "type": "object",
+            "required": [
+                "targetUserId"
+            ],
+            "properties": {
+                "targetUserId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "dtos.CreateTrainingPlanRequest": {
+            "type": "object",
+            "required": [
+                "durationDays",
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "durationDays": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "isTemplate": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "dtos.UpdateDayCompletionRequest": {
+            "type": "object",
+            "properties": {
+                "isCompleted": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "models.NutritionPlan": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string"
+                },
+                "dailyCalories": {
+                    "type": "number"
+                },
+                "dailyCarbs": {
+                    "type": "number"
+                },
+                "dailyFats": {
+                    "type": "number"
+                },
+                "dailyProtein": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "objective": {
+                    "description": "e.g., weight_loss, muscle_gain, maintenance",
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "usecases.GenerateNutritionPlanInput": {
+            "type": "object",
+            "properties": {
+                "activityLevel": {
+                    "description": "1.2 (sedentary) to 1.9 (heavy)",
+                    "type": "number"
+                },
+                "age": {
+                    "type": "integer"
+                },
+                "gender": {
+                    "description": "male, female",
+                    "type": "string"
+                },
+                "height": {
+                    "description": "cm",
+                    "type": "number"
+                },
+                "objective": {
+                    "description": "weight_loss, muscle_gain, maintenance",
+                    "type": "string"
+                },
+                "userId": {
+                    "type": "integer"
+                },
+                "weight": {
+                    "description": "kg",
+                    "type": "number"
                 }
             }
         }

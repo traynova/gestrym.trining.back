@@ -1,10 +1,410 @@
 basePath: /gestrym-training
+definitions:
+  dtos.AddTrainingDayRequest:
+    properties:
+      dayNumber:
+        minimum: 1
+        type: integer
+      notes:
+        type: string
+      workoutId:
+        type: integer
+    required:
+    - dayNumber
+    - workoutId
+    type: object
+  dtos.AssignTrainingPlanRequest:
+    properties:
+      startDate:
+        type: string
+      userId:
+        type: integer
+    required:
+    - startDate
+    - userId
+    type: object
+  dtos.CloneTrainingPlanRequest:
+    properties:
+      targetUserId:
+        type: integer
+    required:
+    - targetUserId
+    type: object
+  dtos.CreateTrainingPlanRequest:
+    properties:
+      description:
+        type: string
+      durationDays:
+        minimum: 1
+        type: integer
+      isTemplate:
+        type: boolean
+      name:
+        type: string
+    required:
+    - durationDays
+    - name
+    type: object
+  dtos.UpdateDayCompletionRequest:
+    properties:
+      isCompleted:
+        type: boolean
+    type: object
+  models.NutritionPlan:
+    properties:
+      createdAt:
+        type: string
+      dailyCalories:
+        type: number
+      dailyCarbs:
+        type: number
+      dailyFats:
+        type: number
+      dailyProtein:
+        type: number
+      id:
+        type: integer
+      isActive:
+        type: boolean
+      name:
+        type: string
+      objective:
+        description: e.g., weight_loss, muscle_gain, maintenance
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: integer
+    type: object
+  usecases.GenerateNutritionPlanInput:
+    properties:
+      activityLevel:
+        description: 1.2 (sedentary) to 1.9 (heavy)
+        type: number
+      age:
+        type: integer
+      gender:
+        description: male, female
+        type: string
+      height:
+        description: cm
+        type: number
+      objective:
+        description: weight_loss, muscle_gain, maintenance
+        type: string
+      userId:
+        type: integer
+      weight:
+        description: kg
+        type: number
+    type: object
 info:
   contact: {}
   description: API para el manejo de entrenamientos.
   title: Gestrym API Training
   version: "1.0"
 paths:
+  /private/nutrition-plans/generate:
+    post:
+      consumes:
+      - application/json
+      description: Calculates macros and creates a plan based on user metrics and
+        goals.
+      parameters:
+      - description: Plan generation data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/usecases.GenerateNutritionPlanInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.NutritionPlan'
+      summary: Generate nutritional plan
+      tags:
+      - nutrition
+  /private/training-plans:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new training plan. Accessible by trainers (role 3) and
+        regular users (role 4).
+      parameters:
+      - description: Plan data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CreateTrainingPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a training plan
+      tags:
+      - TrainingPlans
+  /private/training-plans/:id/clone:
+    post:
+      consumes:
+      - application/json
+      description: Clones an existing plan (template or other) and assigns it to a
+        specific user.
+      parameters:
+      - description: Plan ID to clone
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Clone data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.CloneTrainingPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Clone a training plan for a user
+      tags:
+      - TrainingPlans
+  /private/training-plans/:id/days/:dayId/complete:
+    patch:
+      consumes:
+      - application/json
+      description: Marks a training day as completed or not.
+      parameters:
+      - description: Plan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Day ID
+        in: path
+        name: dayId
+        required: true
+        type: integer
+      - description: Progress data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.UpdateDayCompletionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update training day progress
+      tags:
+      - TrainingPlans
+  /private/training-plans/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a training plan with its days and workouts. Users can
+        only see their assigned plans.
+      parameters:
+      - description: Training Plan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get training plan by ID
+      tags:
+      - TrainingPlans
+  /private/training-plans/{id}/assign:
+    post:
+      consumes:
+      - application/json
+      description: Assigns an existing training plan to a user. Only accessible by
+        trainers (role 3).
+      parameters:
+      - description: Training Plan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Assignment data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.AssignTrainingPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Assign training plan to a user (TRAINER ONLY)
+      tags:
+      - TrainingPlans
+  /private/training-plans/{id}/days:
+    post:
+      consumes:
+      - application/json
+      description: Adds a workout day to an existing training plan. DayNumber must
+        be within the plan's duration.
+      parameters:
+      - description: Training Plan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Day data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dtos.AddTrainingDayRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Add a day to a training plan
+      tags:
+      - TrainingPlans
+  /private/training-plans/adapt:
+    post:
+      consumes:
+      - application/json
+      description: Analyzes user progress and creates an adapted version of the latest
+        plan if completion is high.
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Adapt training plan based on progress
+      tags:
+      - TrainingPlans
+  /private/training-plans/user/{userId}:
+    get:
+      consumes:
+      - application/json
+      description: Returns all training plans assigned to a specific user. Regular
+        users can only query their own.
+      parameters:
+      - description: Target User ID
+        in: path
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get training plans for a user
+      tags:
+      - TrainingPlans
   /public/exercises:
     get:
       consumes:
