@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"fmt"
+	"time"
 
 	"gestrym-training/src/common/models"
 	"gestrym-training/src/training/domain/interfaces"
@@ -11,13 +12,19 @@ import (
 type CloneTrainingPlanUseCase struct {
 	PlanRepo interfaces.TrainingPlanRepository
 	DayRepo  interfaces.TrainingDayRepository
+	AssignmentRepo interfaces.AssignmentRepository
 }
 
 func NewCloneTrainingPlanUseCase(
 	planRepo interfaces.TrainingPlanRepository,
 	dayRepo interfaces.TrainingDayRepository,
+	assignmentRepo interfaces.AssignmentRepository,
 ) *CloneTrainingPlanUseCase {
-	return &CloneTrainingPlanUseCase{PlanRepo: planRepo, DayRepo: dayRepo}
+	return &CloneTrainingPlanUseCase{
+		PlanRepo:       planRepo,
+		DayRepo:        dayRepo,
+		AssignmentRepo: assignmentRepo,
+	}
 }
 
 // Execute performs a deep copy of a training plan and assigns it to targetUserID.
@@ -58,6 +65,17 @@ func (uc *CloneTrainingPlanUseCase) Execute(planID uint, targetUserID uint, crea
 		if _, err := uc.DayRepo.Create(newDay); err != nil {
 			return 0, fmt.Errorf("could not clone training day %d: %w", day.DayNumber, err)
 		}
+	}
+
+	// 4. Persist the assignment history
+	assignment := &models.TrainingPlanAssignment{
+		TrainingPlanID: savedPlan.ID,
+		UserID:         targetUserID,
+		AssignedBy:     creatorID,
+		StartDate:      time.Now(),
+	}
+	if _, err := uc.AssignmentRepo.Assign(assignment); err != nil {
+		return 0, fmt.Errorf("could not persist training plan assignment history: %w", err)
 	}
 
 	return savedPlan.ID, nil

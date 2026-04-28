@@ -62,9 +62,37 @@ Para una experiencia premium, implementa los siguientes estados:
 
 ## 5. 🔌 API Reference (Endpoints)
 
-| Método | Endpoint | Acceso |
-|---|---|---|
-| `GET` | `/public/exercises` | Público |
-| `GET` | `/private/training-plans/user/:userId` | Privado (JWT) |
-| `POST` | `/private/training-plans/adapt` | Privado (JWT) |
-| `PATCH`| `/private/training-plans/:id/days/:dayId/complete` | Privado (JWT) |
+| Método | Endpoint | Acceso | Descripción |
+|---|---|---|---|
+| `GET` | `/public/exercises` | Público | Lista de ejercicios. |
+| `GET` | `/private/training-plans/user/:userId` | Privado (JWT) | Obtiene los planes de un usuario. |
+| `POST` | `/private/training-plans/:id/assign` | Privado (TRAINER) | Asigna un plan a un usuario y registra el historial. |
+| `POST` | `/private/training-plans/:id/clone` | Privado (JWT) | Clona un template y registra el historial de asignación. |
+| `POST` | `/private/training-plans/adapt` | Privado (JWT) | Adapta el plan activo usando el motor de IA. |
+| `PATCH`| `/private/training-plans/:id/days/:dayId/complete` | Privado (JWT) | Marca un día de entrenamiento como completado. |
+
+---
+
+## 6. 🧠 Flujo de Inteligencia Artificial (Adaptación)
+
+Gestrym incluye un motor de evaluación y adaptación de rutinas basado en IA. El frontend debe manejar este flujo de la siguiente manera:
+
+### Endpoint: `POST /private/training-plans/adapt`
+Este endpoint evalúa automáticamente el **último plan asignado al usuario** y toma decisiones basándose en el porcentaje de progreso (`completionRate`):
+
+*   🟢 **Progreso >= 80% (Excelente)**: La IA genera un **nuevo plan clonado** con mayor intensidad (añadiendo "(Adapted - High Intensity)" al nombre) e incrementa la dificultad de los días enfocándose en la sobrecarga progresiva.
+*   🟡 **Progreso >= 50% (Aceptable)**: La IA determina que el usuario va por buen camino y recomienda mantener el plan actual sin cambios bruscos. Retorna el plan original.
+*   🔴 **Progreso < 50% (Bajo)**: La IA identifica problemas de adherencia y sugiere tomar un descanso o elegir un plan más ligero. Retorna el plan original.
+
+**Manejo en la UI:**
+La respuesta siempre incluirá un campo `recommendation` con el mensaje generado por la IA y el objeto `data` (con el plan adaptado o el mismo plan). 
+1. Muestra un "Spinner Mágico" o estado de carga tipo "Nuestra IA está evaluando tu rendimiento..." al llamar este endpoint.
+2. Muestra la frase contenida en `recommendation` en un Toast, Modal o tarjeta resaltada para darle feedback inmediato al usuario sobre lo que la IA pensó.
+
+---
+
+## 7. 🔗 Historial de Asignaciones y Clonación
+
+Para el rol de Entrenador (Trainer):
+- **Clonación de Templates (`/clone`)**: Toma un plan maestro y le genera una copia limpia (con todos los días en `IsCompleted: false`) para un usuario específico.
+- **Asignación y Trazabilidad (`/assign`)**: Ambos endpoints ahora registran automáticamente el historial de asignaciones en la base de datos, almacenando quién asignó el plan y la fecha de inicio. La UI de entrenadores podría aprovechar este estado para saber qué rutinas enviaron y cuándo.

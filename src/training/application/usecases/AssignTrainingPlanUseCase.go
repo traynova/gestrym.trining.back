@@ -12,19 +12,25 @@ import (
 type AssignTrainingPlanUseCase struct {
 	PlanRepo interfaces.TrainingPlanRepository
 	DayRepo  interfaces.TrainingDayRepository
+	AssignmentRepo interfaces.AssignmentRepository
 }
 
 func NewAssignTrainingPlanUseCase(
 	planRepo interfaces.TrainingPlanRepository,
 	dayRepo interfaces.TrainingDayRepository,
+	assignmentRepo interfaces.AssignmentRepository,
 ) *AssignTrainingPlanUseCase {
-	return &AssignTrainingPlanUseCase{PlanRepo: planRepo, DayRepo: dayRepo}
+	return &AssignTrainingPlanUseCase{
+		PlanRepo:       planRepo,
+		DayRepo:        dayRepo,
+		AssignmentRepo: assignmentRepo,
+	}
 }
 
 // Execute assigns planID to userID.
-// startDate is accepted now and will be persisted in TrainingPlanAssignment in a future iteration.
+// startDate is persisted in TrainingPlanAssignment.
 // trainerID is extracted from the JWT context and validated by the route middleware.
-func (uc *AssignTrainingPlanUseCase) Execute(planID uint, userID uint, trainerID uint, _ time.Time) error {
+func (uc *AssignTrainingPlanUseCase) Execute(planID uint, userID uint, trainerID uint, startDate time.Time) error {
 	// Guard: ensure the plan exists before assigning
 	plan, err := uc.PlanRepo.FindByID(planID)
 	if err != nil {
@@ -67,6 +73,17 @@ func (uc *AssignTrainingPlanUseCase) Execute(planID uint, userID uint, trainerID
 		}
 
 		planID = saved.ID // Assign the cloned plan
+	}
+
+	// Persist the assignment history
+	assignment := &models.TrainingPlanAssignment{
+		TrainingPlanID: planID,
+		UserID:         userID,
+		AssignedBy:     trainerID,
+		StartDate:      startDate,
+	}
+	if _, err := uc.AssignmentRepo.Assign(assignment); err != nil {
+		return fmt.Errorf("could not persist training plan assignment: %w", err)
 	}
 
 	return uc.PlanRepo.AssignToUser(planID, userID)

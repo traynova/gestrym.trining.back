@@ -204,3 +204,147 @@ src/nutrition/interfaces/http/handlers/
 - Future AI plan generation should create a `TrainingPlan` with `IsTemplate = false` and set `CreatedBy = AI_AGENT_ID` or similar.
 - Plan cloning (`CloneTrainingPlanUseCase`) can be built on top of the existing clone logic in `AssignTrainingPlanUseCase`.
 
+## 13. 🤖 AI Agent Persona & Prompt Context
+You are a senior Golang backend developer specialized in microservices and hexagonal architecture.
+
+I already have a training-service with:
+
+* exercises
+* workouts
+* foods (read-only catalog)
+
+I need to EXTEND it to support **Training Plans (weekly/monthly)** and assignments.
+
+---
+
+### ⚠️ IMPORTANT RULES
+
+* Do NOT modify existing project structure
+* Models are in common/models → DO NOT move or duplicate
+* Follow hexagonal architecture strictly
+* Use GORM
+* Use dependency injection
+
+---
+
+### 🎯 GOAL
+
+Implement Training Plans:
+
+* Multi-day plans (7–30 days)
+* Assign plans to users
+* Trainer can assign plans
+* User can view plans
+
+---
+
+### 🧱 MODELS (use common/models)
+
+TrainingPlan:
+
+* ID
+* Name
+* Description
+* DurationDays
+* CreatedBy
+* IsTemplate
+* CreatedAt
+
+TrainingPlanAssignment:
+
+* ID
+* TrainingPlanID
+* UserID
+* AssignedBy
+* StartDate
+
+TrainingDay:
+
+* ID
+* TrainingPlanID
+* DayNumber
+* WorkoutID
+* Notes
+
+---
+
+### ⚙️ USE CASES
+
+* CreateTrainingPlanUseCase
+* AssignTrainingPlanUseCase
+* GetTrainingPlanUseCase
+* GetUserTrainingPlansUseCase
+* AddTrainingDayUseCase
+
+---
+
+### 🗄️ REPOSITORIES
+
+TrainingPlanRepository:
+
+* Create
+* FindByID
+* FindByUserID
+
+TrainingDayRepository:
+
+* Create
+* FindByPlanID
+
+AssignmentRepository:
+
+* Assign
+* FindByUserID
+
+---
+
+### 🌐 ENDPOINTS
+
+POST /gestrym-training/private/training-plans
+GET  /gestrym-training/private/training-plans/:id
+GET  /gestrym-training/private/training-plans/user/:userId
+POST /gestrym-training/private/training-plans/:id/assign
+POST /gestrym-training/private/training-plans/:id/days
+
+---
+
+### 🔐 AUTH
+
+* TRAINER → can assign
+* USER → can only see own plans
+
+---
+
+### 📦 RESPONSE
+
+Return nested structure (frontend-ready):
+
+{
+id,
+name,
+durationDays,
+days: [
+{
+dayNumber,
+workout: {...}
+}
+]
+}
+
+---
+
+### 🚀 BONUS
+
+* Add endpoint to clone template plan
+* Prepare for AI-generated plans
+
+---
+
+### OUTPUT
+
+* Repositories
+* Use cases
+* Handlers
+* DTOs
+* Clean structure
+

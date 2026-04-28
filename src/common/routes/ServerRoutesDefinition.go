@@ -82,6 +82,7 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	trainingPlanRepo := trainingRepos.NewTrainingPlanRepositoryImpl(db)
 	trainingDayRepo := trainingRepos.NewTrainingDayRepositoryImpl(db)
 	nutritionPlanRepo := nutritionRepos.NewNutritionPlanRepositoryImpl(db)
+	assignmentRepo := trainingRepos.NewAssignmentRepositoryImpl(db)
 
 	// Adapters & Services
 	exerciseAdapter := adapters.NewExerciseDBAdapterImpl("", viper.GetString("RAPID_API_KEY"), viper.GetString("RAPID_API_HOST"))
@@ -100,11 +101,11 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 
 	// Training Plan Use Cases
 	createTrainingPlanUC := usecases.NewCreateTrainingPlanUseCase(trainingPlanRepo)
-	assignTrainingPlanUC := usecases.NewAssignTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo)
+	assignTrainingPlanUC := usecases.NewAssignTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo, assignmentRepo)
 	getTrainingPlanUC := usecases.NewGetTrainingPlanUseCase(trainingPlanRepo)
 	getUserTrainingPlansUC := usecases.NewGetUserTrainingPlansUseCase(trainingPlanRepo)
 	addTrainingDayUC := usecases.NewAddTrainingDayUseCase(trainingPlanRepo, trainingDayRepo)
-	cloneTrainingPlanUC := usecases.NewCloneTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo)
+	cloneTrainingPlanUC := usecases.NewCloneTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo, assignmentRepo)
 	updateDayCompletionUC := usecases.NewUpdateDayCompletionUseCase(trainingDayRepo, trainingPlanRepo)
 	adaptTrainingPlanUC := usecases.NewAdaptTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo)
 
