@@ -108,6 +108,7 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 	cloneTrainingPlanUC := usecases.NewCloneTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo, assignmentRepo)
 	updateDayCompletionUC := usecases.NewUpdateDayCompletionUseCase(trainingDayRepo, trainingPlanRepo)
 	adaptTrainingPlanUC := usecases.NewAdaptTrainingPlanUseCase(trainingPlanRepo, trainingDayRepo)
+	createFromAIUC := usecases.NewCreateTrainingPlanFromAIUseCase(trainingPlanRepo, trainingDayRepo, workoutRepo, assignmentRepo, exerciseRepo)
 
 	generateNutritionPlanUC := nutritionUseCases.NewGenerateNutritionPlanUseCase(nutritionPlanRepo)
 
@@ -124,6 +125,7 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 		cloneTrainingPlanUC,
 		updateDayCompletionUC,
 		adaptTrainingPlanUC,
+		createFromAIUC,
 	)
 
 	nutritionPlanHandler := nutritionHandlers.NewNutritionPlanHandler(generateNutritionPlanUC)
@@ -189,7 +191,7 @@ func (r *routesDefinition) addRoutes(serverInstance *gin.Engine) {
 
 	// Add routes to remaining groups
 	r.addPublicRoutes()
-	r.addInternalRoutes()
+	r.addInternalRoutes(trainingPlanHandler)
 	r.addProtectedRoutes()
 
 }
@@ -229,8 +231,14 @@ func (r *routesDefinition) addPrivateRoutes() {
 	// routes are registered inline in addRoutes() for scope reasons.
 }
 
-func (r *routesDefinition) addInternalRoutes() {
+func (r *routesDefinition) addInternalRoutes(trainingPlanHandler *handlers.TrainingPlanHandler) {
+	internalGroup := r.serverGroup.Group("/internal")
+	internalGroup.Use(middleware.SetupApiKeyMiddleware()) // Internal security
 
+	trainingPlansInternalGroup := internalGroup.Group("/training-plans")
+	{
+		trainingPlansInternalGroup.POST("/ai", trainingPlanHandler.CreateFromAI)
+	}
 }
 
 func (r *routesDefinition) addProtectedRoutes() {

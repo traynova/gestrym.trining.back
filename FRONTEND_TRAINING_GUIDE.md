@@ -17,6 +17,7 @@ Este documento detalla la estructura y el flujo de trabajo para implementar la p
 - `durationDays`: Duración (7, 30 días, etc.).
 - `days`: Lista de `TrainingDay`.
 - `assignedTo`: ID del usuario asignado.
+- `isAiGenerated`: Boolean que indica si el plan fue creado por inteligencia artificial.
 
 ---
 
@@ -70,6 +71,7 @@ Para una experiencia premium, implementa los siguientes estados:
 | `POST` | `/private/training-plans/:id/clone` | Privado (JWT) | Clona un template y registra el historial de asignación. |
 | `POST` | `/private/training-plans/adapt` | Privado (JWT) | Adapta el plan activo usando el motor de IA. |
 | `PATCH`| `/private/training-plans/:id/days/:dayId/complete` | Privado (JWT) | Marca un día de entrenamiento como completado. |
+| `POST` | `/internal/training-plans/ai` | **Interno (API Key)** | (Uso exclusivo para `ai-service`) Registra un nuevo plan generado por IA. |
 
 ---
 

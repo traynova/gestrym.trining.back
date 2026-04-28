@@ -30,6 +30,34 @@ type CloneTrainingPlanRequest struct {
 	TargetUserID uint `json:"targetUserId" binding:"required"`
 }
 
+// CreateTrainingPlanFromAIRequest is the input from AI service.
+type CreateTrainingPlanFromAIRequest struct {
+	UserID       uint           `json:"userId"       binding:"required"`
+	Name         string         `json:"name"         binding:"required"`
+	DurationDays int            `json:"durationDays" binding:"required"`
+	Days         []AIDayRequest `json:"days"         binding:"required"`
+}
+
+type AIDayRequest struct {
+	DayNumber int              `json:"dayNumber" binding:"required"`
+	Workout   AIWorkoutRequest `json:"workout"    binding:"required"`
+}
+
+type AIWorkoutRequest struct {
+	Name      string               `json:"name"      binding:"required"`
+	Exercises []AIExerciseRequest `json:"exercises" binding:"required"`
+}
+
+type AIExerciseRequest struct {
+	ExerciseID uint           `json:"exerciseId" binding:"required"`
+	Sets       []AISetRequest `json:"sets"       binding:"required"`
+}
+
+type AISetRequest struct {
+	Reps int `json:"reps" binding:"required"`
+	Rest int `json:"rest" binding:"required"`
+}
+
 // UpdateDayCompletionRequest is the request body for PATCH /training-plans/:id/days/:dayId/complete.
 type UpdateDayCompletionRequest struct {
 	IsCompleted bool `json:"isCompleted"`

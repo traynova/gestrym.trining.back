@@ -10,8 +10,9 @@ type TrainingPlan struct {
 	DurationDays int           `gorm:"not null;default:7"      json:"durationDays"` // 7, 30, or custom
 	CreatedBy    uint          `gorm:"not null;index"          json:"createdBy"`    // Trainer or User ID
 	AssignedTo   *uint         `gorm:"index"                   json:"assignedTo"`   // Nullable → template or self-owned
-	IsTemplate   bool          `gorm:"default:false"           json:"isTemplate"`   // Reusable plan base
-	Days         []TrainingDay `gorm:"foreignKey:TrainingPlanID" json:"days,omitempty"`
+	IsTemplate    bool          `gorm:"default:false"           json:"isTemplate"`   // Reusable plan base
+	IsAIGenerated bool          `gorm:"default:false"           json:"isAiGenerated"`
+	Days          []TrainingDay `gorm:"foreignKey:TrainingPlanID" json:"days,omitempty"`
 	CreatedAt    time.Time     `json:"createdAt"`
 	UpdatedAt    time.Time     `json:"updatedAt"`
 }
