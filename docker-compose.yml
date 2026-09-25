@@ -1,0 +1,16 @@
+networks:
+  gestrym-network:
+    external: true
+
+services:
+  gestrym-training:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${TRAINING_IMAGE:-jhonnier/back-trining:${VERSION:-1.0.0}}
+    container_name: gestrym-training
+    restart: always
+    env_file:
+      - stack.env
+    networks:
+      - gestrym-network
